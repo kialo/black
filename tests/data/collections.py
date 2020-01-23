@@ -154,8 +154,8 @@ if True:
         InstanceIds=[instance.id], WaiterConfig={"Delay": 5,}
     )
     ec2client.get_waiter("instance_stopped").wait(
-        InstanceIds=[instance.id], WaiterConfig={"Delay": 5,},
+        InstanceIds=[instance.id], WaiterConfig={"Delay": 5,}
     )
     ec2client.get_waiter("instance_stopped").wait(
-        InstanceIds=[instance.id], WaiterConfig={"Delay": 5,},
+        InstanceIds=[instance.id], WaiterConfig={"Delay": 5,}
     )

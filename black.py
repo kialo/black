@@ -1455,19 +1455,12 @@ class Line:
 
         return False
 
-    def maybe_remove_trailing_comma(self, closing: Leaf) -> bool:
-        """Remove trailing comma if there is one and it's safe."""
-        if not (self.leaves and self.leaves[-1].type == token.COMMA):
-            return False
-
-        # We remove trailing commas only in the case of importing a
-        # single name from a module.
-        if not (
+    def is_single_name_module_import(self, closing: Leaf) -> bool:
+        if (
             self.leaves
             and self.is_import
             and len(self.leaves) > 4
             and self.leaves[-1].type == token.COMMA
-            and closing.type in CLOSING_BRACKETS
             and self.leaves[-4].type == token.NAME
             and (
                 # regular `from foo import bar,`
@@ -1487,10 +1480,46 @@ class Line:
             )
             and closing.type == token.RPAR
         ):
+            return True
+
+        return False
+
+    def is_function_argument_list(self, closing: Leaf) -> bool:
+        depth = closing.bracket_depth + 1
+        opening = closing.opening_bracket
+
+        try:
+            _opening_index = self.leaves.index(opening)
+        except ValueError:
             return False
 
-        self.remove_trailing_comma()
-        return True
+        for leaf in self.leaves[_opening_index + 1 :]:
+            if leaf is closing:
+                break
+
+            if (
+                leaf.bracket_depth == depth
+                and leaf.type == token.COMMA
+                and leaf.parent
+                and leaf.parent.type in {syms.arglist, syms.typedargslist}
+            ):
+                return True
+
+        return False
+
+    def maybe_remove_trailing_comma(self, closing: Leaf) -> bool:
+        """Remove trailing comma if there is one and it's safe."""
+        if not (self.leaves and self.leaves[-1].type == token.COMMA):
+            return False
+
+        if closing.type in CLOSING_BRACKETS and (
+            self.is_single_name_module_import(closing)
+            or self.is_function_argument_list(closing)
+        ):
+            self.remove_trailing_comma()
+            return True
+
+        return False
 
     def append_comment(self, comment: Leaf) -> bool:
         """Add an inline or standalone comment to the line."""
